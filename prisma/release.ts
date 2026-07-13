@@ -17,8 +17,17 @@ async function main() {
   const count = await prisma.service.count();
   await prisma.$disconnect();
 
-  if (count === 0) {
-    console.log("→ Base de datos vacía, cargando datos de ejemplo...");
+  // FORCE_RESEED lets you wipe + reload demo data once (e.g. after fixing a
+  // seed bug) by setting the env var, redeploying, then removing it again.
+  // Leaving it set would wipe real client bookings on every future restart.
+  const forceReseed = process.env.FORCE_RESEED === "true";
+
+  if (count === 0 || forceReseed) {
+    console.log(
+      forceReseed
+        ? "→ FORCE_RESEED activo: recargando datos de ejemplo (esto borra las reservas actuales)..."
+        : "→ Base de datos vacía, cargando datos de ejemplo..."
+    );
     execSync("npx tsx prisma/seed.ts", { stdio: "inherit" });
   } else {
     console.log(`→ Base de datos ya tiene ${count} servicio(s) cargado(s), omito el seed.`);
