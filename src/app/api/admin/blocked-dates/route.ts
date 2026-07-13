@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { startOfDay } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { isAdminAuthed } from "@/lib/admin-auth";
+import { montevideoDateTime } from "@/lib/timezone";
 
 export async function GET() {
   if (!(await isAdminAuthed())) {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Fecha inválida" }, { status: 400 });
   }
 
-  const date = startOfDay(new Date(`${dateParam}T00:00:00`));
+  const date = montevideoDateTime(dateParam);
 
   const existing = await prisma.blockedDate.findUnique({ where: { date } });
 

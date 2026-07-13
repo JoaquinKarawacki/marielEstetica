@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { endOfDay, parseISO, startOfDay } from "date-fns";
+import { addDays } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { getAvailableSlots } from "@/lib/availability";
+import { montevideoDateTime } from "@/lib/timezone";
 
 export async function GET(request: NextRequest) {
   const serviceId = request.nextUrl.searchParams.get("serviceId");
@@ -16,21 +17,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 });
   }
 
-  const day = parseISO(dateParam);
+  const day = montevideoDateTime(dateParam);
   if (Number.isNaN(day.getTime())) {
     return NextResponse.json({ error: "Fecha inválida" }, { status: 400 });
   }
+  const nextDay = addDays(day, 1);
 
   const [bookings, blocked] = await Promise.all([
     prisma.booking.findMany({
       where: {
-        date: { gte: startOfDay(day), lte: endOfDay(day) },
+        date: { gte: day, lt: nextDay },
         status: { notIn: ["cancelled"] },
       },
       select: { date: true, durationMin: true },
     }),
     prisma.blockedDate.findFirst({
-      where: { date: { gte: startOfDay(day), lte: endOfDay(day) } },
+      where: { date: { gte: day, lt: nextDay } },
     }),
   ]);
 

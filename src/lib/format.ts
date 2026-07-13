@@ -1,3 +1,5 @@
+import { MONTEVIDEO_TIME_ZONE } from "./timezone";
+
 const currencyFormatter = new Intl.NumberFormat("es-UY", {
   maximumFractionDigits: 0,
 });
@@ -10,6 +12,7 @@ const dateFormatter = new Intl.DateTimeFormat("es-UY", {
   weekday: "long",
   day: "2-digit",
   month: "long",
+  timeZone: MONTEVIDEO_TIME_ZONE,
 });
 
 export function formatDateLong(date: Date): string {
@@ -22,6 +25,7 @@ export function formatDateShort(date: Date): string {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: MONTEVIDEO_TIME_ZONE,
   }).format(date);
 }
 
@@ -30,6 +34,7 @@ export function formatTime(date: Date): string {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: MONTEVIDEO_TIME_ZONE,
   }).format(date);
 }
 

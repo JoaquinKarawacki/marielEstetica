@@ -1,5 +1,6 @@
-import { addDays, format, startOfDay } from "date-fns";
+import { addDays } from "date-fns";
 import { BUSINESS_HOURS } from "./constants";
+import { toMontevideoDateStr, toMontevideoFields, todayInMontevideo } from "./timezone";
 
 export type UpcomingDay = {
   date: Date;
@@ -27,18 +28,20 @@ const MONTH_SHORT = [
 ];
 
 export function getUpcomingDays(count = 21): UpcomingDay[] {
-  const today = startOfDay(new Date());
+  const today = todayInMontevideo();
   const days: UpcomingDay[] = [];
 
   for (let i = 0; i < count; i++) {
     const date = addDays(today, i);
+    const fields = toMontevideoFields(date);
+    const weekday = fields.getUTCDay();
     days.push({
       date,
-      dateStr: format(date, "yyyy-MM-dd"),
-      weekdayShort: WEEKDAY_SHORT[date.getDay()],
-      dayNum: format(date, "d"),
-      monthShort: MONTH_SHORT[date.getMonth()],
-      isOpen: Boolean(BUSINESS_HOURS[date.getDay()]),
+      dateStr: toMontevideoDateStr(date),
+      weekdayShort: WEEKDAY_SHORT[weekday],
+      dayNum: String(fields.getUTCDate()),
+      monthShort: MONTH_SHORT[fields.getUTCMonth()],
+      isOpen: Boolean(BUSINESS_HOURS[weekday]),
     });
   }
 

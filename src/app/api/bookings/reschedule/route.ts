@@ -5,6 +5,7 @@ import { combineDateAndTime } from "@/lib/availability";
 import { rescheduleSchema } from "@/lib/validation";
 import { buildWhatsappPreview } from "@/lib/whatsapp-preview";
 import { BUSINESS_HOURS } from "@/lib/constants";
+import { montevideoDateTime, toMontevideoFields } from "@/lib/timezone";
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Reserva no encontrada" }, { status: 404 });
   }
 
-  const day = new Date(`${date}T00:00:00`);
+  const day = montevideoDateTime(date);
   const start = combineDateAndTime(day, time);
   const end = addMinutes(start, booking.durationMin);
 
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Ese horario ya pasó" }, { status: 409 });
   }
 
-  const hours = BUSINESS_HOURS[start.getDay()];
+  const hours = BUSINESS_HOURS[toMontevideoFields(start).getUTCDay()];
   if (!hours) {
     return NextResponse.json({ error: "No atendemos ese día" }, { status: 409 });
   }

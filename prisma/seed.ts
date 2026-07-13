@@ -1,9 +1,10 @@
 import "dotenv/config";
-import { addDays, setHours, setMinutes, startOfDay } from "date-fns";
+import { addDays } from "date-fns";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { generateBookingCode } from "../src/lib/booking-code";
 import { buildWhatsappPreview } from "../src/lib/whatsapp-preview";
+import { montevideoDateTime, toMontevideoFields, toMontevideoDateStr, todayInMontevideo } from "../src/lib/timezone";
 
 const adapter = new PrismaLibSql({ url: process.env.DATABASE_URL ?? "file:./dev.db" });
 const prisma = new PrismaClient({ adapter });
@@ -96,9 +97,10 @@ const services = [
 ];
 
 function nextBookableDate(baseOffsetDays: number, hour: number, minute: number) {
-  let d = addDays(startOfDay(new Date()), baseOffsetDays);
-  if (d.getDay() === 0) d = addDays(d, 1); // domingo cerrado -> corre a lunes
-  return setMinutes(setHours(d, hour), minute);
+  let d = addDays(todayInMontevideo(), baseOffsetDays);
+  if (toMontevideoFields(d).getUTCDay() === 0) d = addDays(d, 1); // domingo cerrado -> corre a lunes
+  const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  return montevideoDateTime(toMontevideoDateStr(d), time);
 }
 
 async function main() {

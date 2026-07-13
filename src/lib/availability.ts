@@ -1,12 +1,8 @@
-import { addMinutes, isBefore, isEqual, setHours, setMinutes, startOfDay } from "date-fns";
+import { addMinutes, isBefore, isEqual } from "date-fns";
 import { BUSINESS_HOURS, SLOT_STEP_MIN } from "./constants";
+import { montevideoDateTime, toMontevideoDateStr, toMontevideoFields } from "./timezone";
 
 export type ExistingBooking = { date: Date; durationMin: number };
-
-function timeStringToDate(day: Date, time: string): Date {
-  const [h, m] = time.split(":").map(Number);
-  return setMinutes(setHours(startOfDay(day), h), m);
-}
 
 function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
   return isBefore(aStart, bEnd) && isBefore(bStart, aEnd);
@@ -17,6 +13,10 @@ function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): bool
  * service duration, excluding slots that collide with existing bookings or
  * fall outside business hours. `now` is injected for deterministic same-day
  * cutoffs (a booking must start at least `minLeadMin` from now).
+ *
+ * `day` must represent Montevideo midnight for the target date (see
+ * `montevideoDateTime`) — all wall-clock math below is done relative to
+ * Montevideo, independent of the host machine's own timezone.
  */
 export function getAvailableSlots({
   day,
@@ -35,12 +35,13 @@ export function getAvailableSlots({
 }): string[] {
   if (isBlocked) return [];
 
-  const weekday = day.getDay();
+  const weekday = toMontevideoFields(day).getUTCDay();
   const hours = BUSINESS_HOURS[weekday];
   if (!hours) return [];
 
-  const openTime = timeStringToDate(day, hours.start);
-  const closeTime = timeStringToDate(day, hours.end);
+  const dateStr = toMontevideoDateStr(day);
+  const openTime = montevideoDateTime(dateStr, hours.start);
+  const closeTime = montevideoDateTime(dateStr, hours.end);
   const earliestStart = addMinutes(now, minLeadMin);
 
   const slots: string[] = [];
@@ -56,8 +57,9 @@ export function getAvailableSlots({
     );
 
     if (!isPast && !collides) {
+      const fields = toMontevideoFields(cursor);
       slots.push(
-        `${String(cursor.getHours()).padStart(2, "0")}:${String(cursor.getMinutes()).padStart(2, "0")}`
+        `${String(fields.getUTCHours()).padStart(2, "0")}:${String(fields.getUTCMinutes()).padStart(2, "0")}`
       );
     }
 
@@ -67,6 +69,7 @@ export function getAvailableSlots({
   return slots;
 }
 
+/** `day` must represent Montevideo midnight for the target date. */
 export function combineDateAndTime(day: Date, time: string): Date {
-  return timeStringToDate(day, time);
+  return montevideoDateTime(toMontevideoDateStr(day), time);
 }
